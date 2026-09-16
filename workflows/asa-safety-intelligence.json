@@ -1,0 +1,554 @@
+{
+  "name": "ASA Safety Intelligence",
+  "description": "ASA safety intelligence: freeze/clawback/manager flags, holder concentration, price and liquidity history, and a 1–10 safety score for any Algorand asset id",
+  "exportedFrom": "FrostyFi (app.frostylabs.ai), deployed as the x402 agent https://x402.frostylabs.ai/asa-intel/a2a",
+  "notes": "Node configs as stored by the visual builder. Deployment-specific webhook URL and secret were removed. LLM prompt mentions reference other nodes by id.",
+  "nodes": [
+    {
+      "id": "1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b",
+      "kind": "input",
+      "name": "INPUT",
+      "description": "",
+      "config": {
+        "kind": "input",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "assetId": {
+              "type": "string",
+              "default": "31566704",
+              "description": "Algorand ASA id (e.g. 31566704 = USDC)"
+            }
+          },
+          "required": [
+            "assetId"
+          ]
+        }
+      },
+      "position": {
+        "x": -900,
+        "y": 200
+      }
+    },
+    {
+      "id": "fc8340d0-09e2-4f32-ad0c-5cc374df1065",
+      "kind": "webhook",
+      "name": "Incoming Call",
+      "description": "",
+      "config": {
+        "kind": "webhook",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "description": "Whether the webhook was registered successfully"
+            },
+            "webhookUrl": {
+              "type": "string",
+              "description": "The webhook endpoint URL (generated after deployment)"
+            },
+            "secretToken": {
+              "type": "string",
+              "description": "Secret token for webhook authentication (generated after deployment)"
+            },
+            "method": {
+              "type": "string",
+              "description": "HTTP method (GET, POST, PUT, DELETE)"
+            },
+            "registeredAt": {
+              "type": "string",
+              "description": "ISO timestamp when the webhook was registered"
+            },
+            "responseTimeout": {
+              "type": "number",
+              "description": "Response timeout in milliseconds"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the webhook operation"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Webhook payload data received from external service",
+              "properties": {
+                "body": {
+                  "type": "object",
+                  "description": "Request body data"
+                },
+                "query": {
+                  "type": "object",
+                  "description": "Query parameters"
+                },
+                "headers": {
+                  "type": "object",
+                  "description": "Request headers"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "description": "ISO timestamp of the webhook request"
+                }
+              }
+            },
+            "duration": {
+              "type": "number",
+              "description": "Processing duration in milliseconds"
+            },
+            "error": {
+              "type": "string",
+              "description": "Error message if the webhook registration failed"
+            }
+          }
+        },
+        "method": "POST",
+        "responseTimeout": 60000
+      },
+      "position": {
+        "x": -620,
+        "y": 200
+      }
+    },
+    {
+      "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+      "kind": "algorand",
+      "name": "ASA Safety Check",
+      "description": "",
+      "config": {
+        "kind": "algorand",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "network": {
+              "type": "string",
+              "description": "'mainnet' or 'testnet'"
+            },
+            "assetId": {
+              "type": "string",
+              "description": "ASA id checked"
+            },
+            "name": {
+              "type": "string",
+              "description": "Asset name"
+            },
+            "unitName": {
+              "type": "string",
+              "description": "Asset unit name"
+            },
+            "decimals": {
+              "type": "number",
+              "description": "Asset decimals"
+            },
+            "hasClawback": {
+              "type": "boolean",
+              "description": "Clawback address set and not the zero address"
+            },
+            "hasFreeze": {
+              "type": "boolean",
+              "description": "Freeze address set and not the zero address"
+            },
+            "hasManager": {
+              "type": "boolean",
+              "description": "Manager address set and not the zero address"
+            },
+            "defaultFrozen": {
+              "type": "boolean",
+              "description": "New opt-ins are frozen by default"
+            },
+            "price": {
+              "type": "number",
+              "description": "Spot price from Vestige"
+            },
+            "confidence": {
+              "type": "number",
+              "description": "Vestige price confidence (0-1)"
+            },
+            "totalLockup": {
+              "type": "number",
+              "description": "Total value locked"
+            },
+            "circulatingSupply": {
+              "type": "string",
+              "description": "Total supply minus the reserve address's current holding (decimal string — can exceed Number.MAX_SAFE_INTEGER, e.g. USDC)"
+            },
+            "largeHolderCount": {
+              "type": "number",
+              "description": "Holders (excluding the reserve) found at the queried scope — see holderScope"
+            },
+            "holderScope": {
+              "type": "string",
+              "description": "'above1pct': holders above 1% of circulating supply (indexer currency-greater-than filter). 'page': fallback to a plain balances page when that filter errored or timed out — see HOLDER_DATA_PARTIAL"
+            },
+            "topHolderPct": {
+              "type": "number",
+              "description": "Largest holder's share of circulating supply (%), among holders above 1% when available (see holderScope)"
+            },
+            "verdictFlags": {
+              "type": "array",
+              "description": "e.g. CLAWBACK_ACTIVE, FREEZE_ACTIVE, MANAGER_ACTIVE, DEFAULT_FROZEN, CONCENTRATED_SUPPLY, NO_PRICE, HOLDER_DATA_PARTIAL"
+            }
+          }
+        },
+        "operation": "asaSafetyCheck",
+        "testnet": false,
+        "assetId": {
+          "nodeId": "1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b",
+          "path": [
+            "assetId"
+          ]
+        }
+      },
+      "position": {
+        "x": -340,
+        "y": 200
+      }
+    },
+    {
+      "id": "7fdf87c6-9d3f-4ecb-94bc-dd0d787f6c23",
+      "kind": "algorand",
+      "name": "Price History",
+      "description": "",
+      "config": {
+        "kind": "algorand",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "network": {
+              "type": "string",
+              "description": "'mainnet' or 'testnet'"
+            },
+            "assetId": {
+              "type": "string",
+              "description": "ASA id queried"
+            },
+            "interval": {
+              "type": "string",
+              "description": "Requested bucket size (e.g. '1h', '1d')"
+            },
+            "count": {
+              "type": "number",
+              "description": "Number of history buckets"
+            },
+            "history": {
+              "type": "array",
+              "description": "Vestige history buckets: { timestamp, interval, volume, tvl, swaps, vwap, confidence }"
+            }
+          }
+        },
+        "operation": "getAssetHistory",
+        "testnet": false,
+        "assetId": {
+          "nodeId": "1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b",
+          "path": [
+            "assetId"
+          ]
+        },
+        "interval": "1d"
+      },
+      "position": {
+        "x": -60,
+        "y": 200
+      }
+    },
+    {
+      "id": "19c63dea-a9db-48c5-831c-a8c1c480ddf0",
+      "kind": "algorand",
+      "name": "Liquidity Pools",
+      "description": "",
+      "config": {
+        "kind": "algorand",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "network": {
+              "type": "string",
+              "description": "'mainnet' or 'testnet'"
+            },
+            "assetId": {
+              "type": "string",
+              "description": "ASA id queried (asset_1_id)"
+            },
+            "count": {
+              "type": "number",
+              "description": "Total matching pools"
+            },
+            "pools": {
+              "type": "array",
+              "description": "Vestige pool objects: { id, protocol_id, address, asset_1_id, asset_1_supply, asset_2_id, asset_2_supply, fee, … }"
+            }
+          }
+        },
+        "operation": "getPools",
+        "testnet": false,
+        "assetId": {
+          "nodeId": "1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b",
+          "path": [
+            "assetId"
+          ]
+        }
+      },
+      "position": {
+        "x": 220,
+        "y": 200
+      }
+    },
+    {
+      "id": "b4647abb-f767-4c7a-b870-3830119b6266",
+      "kind": "llm",
+      "name": "Safety Report",
+      "description": "",
+      "config": {
+        "kind": "llm",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "answer": {
+              "type": "string"
+            },
+            "totalTokens": {
+              "type": "number"
+            }
+          }
+        },
+        "messages": [
+          {
+            "role": "user",
+            "content": {
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "You are an Algorand ASA risk analyst. Assess the asset below from its protocol-level controls, holder concentration, price and liquidity data.\n\nRules:\n- Verdict flags: CLAWBACK_ACTIVE / FREEZE_ACTIVE / MANAGER_ACTIVE mean an issuer address holds that power. Reputable regulated issuers (e.g. Circle for USDC) legitimately hold freeze/manager rights, so explain the risk in context instead of treating a flag as proof of a scam.\n- CONCENTRATED_SUPPLY means one holder controls more than 50% of circulating supply. NO_PRICE means no market price was found. HOLDER_DATA_PARTIAL means concentration was computed from a partial holder page.\n- A blank value means zero, false or unavailable.\n- Be specific with numbers. No boilerplate.\n\nRespond with ONLY a single JSON object (no markdown fences, no commentary) of the form:\n{\"summary\": string, \"safetyScore\": integer 1-10 (10 = safest), \"flags\": [{\"flag\": string, \"meaning\": string}], \"liquidity\": {\"assessment\": string, \"poolCount\": number, \"volumeTrend30d\": string}, \"recommendation\": string}\n\nASSET"
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nAsset id: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b",
+                        "label": "{\"nodeId\":\"1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b\",\"path\":[\"assetId\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nName: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"name\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nUnit: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"unitName\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nDecimals: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"decimals\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nVerdict flags: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"verdictFlags\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nCirculating supply (base units): "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"circulatingSupply\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nLargest holder % of circulating: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"topHolderPct\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nHolders above 1%: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"largeHolderCount\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nHolder data scope: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"holderScope\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nPrice (ALGO): "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"price\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nPrice confidence: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"confidence\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nTotal value locked: "
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+                        "label": "{\"nodeId\":\"3727e640-585b-4d15-9dd7-3fdc7e242566\",\"path\":[\"totalLockup\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\n\nPRICE HISTORY (30 daily candles: volume, tvl, swaps, vwap, confidence):"
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "7fdf87c6-9d3f-4ecb-94bc-dd0d787f6c23",
+                        "label": "{\"nodeId\":\"7fdf87c6-9d3f-4ecb-94bc-dd0d787f6c23\",\"path\":[\"history\"]}"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "text": "\n\nLIQUIDITY POOLS (count):"
+                    },
+                    {
+                      "type": "mention",
+                      "attrs": {
+                        "id": "19c63dea-a9db-48c5-831c-a8c1c480ddf0",
+                        "label": "{\"nodeId\":\"19c63dea-a9db-48c5-831c-a8c1c480ddf0\",\"path\":[\"count\"]}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "model": {
+          "provider": "openRouter",
+          "model": "gemini-3.8-flash"
+        }
+      },
+      "position": {
+        "x": 500,
+        "y": 200
+      }
+    },
+    {
+      "id": "889dc0a6-0aba-4716-a7d5-ab85f3f29c70",
+      "kind": "output",
+      "name": "OUTPUT",
+      "description": "",
+      "config": {
+        "kind": "output",
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "report": {
+              "type": "string"
+            }
+          }
+        },
+        "outputData": [
+          {
+            "key": "report",
+            "source": {
+              "nodeId": "b4647abb-f767-4c7a-b870-3830119b6266",
+              "path": [
+                "answer"
+              ]
+            }
+          }
+        ]
+      },
+      "position": {
+        "x": 780,
+        "y": 200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "1c0e3e9f-290d-46e7-bfb7-c86c29b83d1b",
+      "target": "fc8340d0-09e2-4f32-ad0c-5cc374df1065"
+    },
+    {
+      "source": "fc8340d0-09e2-4f32-ad0c-5cc374df1065",
+      "target": "3727e640-585b-4d15-9dd7-3fdc7e242566"
+    },
+    {
+      "source": "3727e640-585b-4d15-9dd7-3fdc7e242566",
+      "target": "7fdf87c6-9d3f-4ecb-94bc-dd0d787f6c23"
+    },
+    {
+      "source": "7fdf87c6-9d3f-4ecb-94bc-dd0d787f6c23",
+      "target": "19c63dea-a9db-48c5-831c-a8c1c480ddf0"
+    },
+    {
+      "source": "19c63dea-a9db-48c5-831c-a8c1c480ddf0",
+      "target": "b4647abb-f767-4c7a-b870-3830119b6266"
+    },
+    {
+      "source": "b4647abb-f767-4c7a-b870-3830119b6266",
+      "target": "889dc0a6-0aba-4716-a7d5-ab85f3f29c70"
+    }
+  ]
+}
